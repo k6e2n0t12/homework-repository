@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<style>
+#info {
+    position: absolute;
+    top: 0px;
+    width: 100%;
+    padding: 10px;
+    text-align: center;
+    color: #ffff00
+}
+body {
+    overflow: hidden;
+}
+
+</style>
+</head>
+
+<body> 
+<div id="info">HW2
+<br/>
+  <button id="changeView" style="width:20%">Change View</button>
+<br/>
+  <button id="changeMovement" style="width:20%">Change Movement</button></div>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.min.js"></script>
+<script src="https://dl.dropboxusercontent.com/u/3587259/Code/Threejs/OrbitControls.js">
+    
+</script>
+<script src="http://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5.1/dat.gui.js"></script>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+
+<script>
+var camera,camera3rd, scene, renderer, geometry, material, mesh, light, controls;
+var turn = true;
+var headFrame,torsoFrame,skirtFront;
+var gcontrols;
+var speed=0.01,angle=0,angleArm=0,adjust=4;
+var danceMode=false,thirdPersonView=false;
+var clock = new THREE.Clock();
+
+var period = 4;
+var pose1 = {
+	heady:0,
+  rightArmz:0,
+  leftArmz:0,
+  rightLegz:0,
+  leftLegz:0
+};
+var pose2 = {
+	heady:Math.PI/3,
+  rightArmz:-(150/180)*Math.PI,
+  leftArmz:0,
+  rightLegz:0,
+  leftLegz:0
+};
+var pose3 = {
+	heady:-Math.PI/3,
+  rightArmz:0,
+  leftArmz:(150/180)*Math.PI,
+  rightLegz:0,
+  leftLegz:0
+};
+var pose4 = {
+	heady:0,
+  rightArmz:-(90/180)*Math.PI,
+  leftArmz:0,
+  rightLegz:-(50/180)*Math.PI,
+  leftLegz:0
+};
+var pose5 = {
+	heady:0,
+  rightArmz:0,
+  leftArmz:(150/180)*Math.PI,
+  rightLegz:0,
+  leftLegz:(50/180)*Math.PI
+};
+var pose6 = {
+	heady:Math.PI/3,
+  rightArmz:0,
+  leftArmz:0,
+  rightLegz:-(50/180)*Math.PI,
+  leftLegz:0
+};
+var pose7 = {
+	heady:Math.PI/3,
+  rightArmz:0,
+  leftArmz:0,
+  rightLegz:0,
+  leftLegz:(50/180)*Math.PI
+};
+
+var keys = [{s: 0,pose: pose1}, {s: 1/8, pose: pose2}, {s: 2/8,pose: pose3},{s: 3/8,pose: pose1},{s: 4/8,pose: pose4},{s: 5/8,pose: pose5},{s: 6/8,pose: pose6},{s: 7/8,pose: pose7},{s: 1,pose: pose1}];
+
+$("#changeMovement").click(function() {
+	if(danceMode===true)
+  	danceMode=false;
+  else
+  	danceMode=true;
+  setDefault();
+});
+$("#changeView").click(function() {
+	if(thirdPersonView==true)
+  	thirdPersonView=false;
+  else
+  	thirdPersonView=true;
+});
+
+init();
+animate();
+function init() {
+    scene = new THREE.Scene();
+
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+    camera.position.z = 500;
+    scene.add(camera);
+
+		camera3rd = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+    scene.add(camera3rd);
+		
+    gcontrols = {
+    	speed:0.01
+    }
+    
+    var gui = new dat.GUI();
+		gui.remember (gcontrols);
+    gui.add(gcontrols, 'speed', 0, 0.1);
+    //geometry = new THREE.BoxGeometry(100, 20, 20);
+    //material = new THREE.MeshLambertMaterial();
+
+    //mesh = new THREE.Mesh(geometry, material);
+    //scene.add(mesh);
+
+    light = new THREE.PointLight(0xffffff);
+    light.position.set(0,0,100);
+    scene.add(light);
+    light2 = new THREE.PointLight(0xffffff);
+    light2.position.set(0,0,-100);
+    scene.add(light2);
+    
+    var gridXZ = new THREE.GridHelper(100, 10);
+    gridXZ.setColors(new THREE.Color(0xff0000), new THREE.Color(0xffffff));
+    scene.add(gridXZ);
+
+    renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x888888);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+    document.body.appendChild(renderer.domElement);
+    
+    //torso
+    
+    THREE.ImageUtils.crossOrigin = '';
+    torsoFrame = new THREE.Object3D();
+    
+		var torsoMaterials = [];
+    torsoMaterials.push(new THREE.MeshLambertMaterial({side:THREE.DoubleSide,color:"rgb(193,164,124)"}));
+    torsoMaterials.push(new THREE.MeshLambertMaterial({side:THREE.DoubleSide,color:"rgb(193,164,124)"}));
+    torsoMaterials.push(new THREE.MeshLambertMaterial({side:THREE.DoubleSide,color:"rgb(193,164,124)"}));
+    torsoMaterials.push(new THREE.MeshLambertMaterial({visible:false}));
+    torsoMaterials.push(new THREE.MeshLambertMaterial({side:THREE.DoubleSide,map: THREE.ImageUtils.loadTexture( 'http://i.imgur.com/p1alePt.jpg' )}));
+    torsoMaterials.push(new THREE.MeshLambertMaterial({side:THREE.DoubleSide,map: THREE.ImageUtils.loadTexture( 'http://i.imgur.com/p1alePt.jpg' )}));
+    torsoFrame.add(new THREE.Mesh(new THREE.BoxGeometry(32, 38, 32),new THREE.MeshFaceMaterial(torsoMaterials)));
+    
+    skirtFront= new THREE.Mesh(new THREE.PlaneGeometry(32,14),new THREE.MeshLambertMaterial({side:THREE.DoubleSide,color:"rgb(193,164,124)"}));
+    skirtFront.position.set(0,-(38/2),(32/2));
+    skirtFront.rotation.x=(-(45/180+1)*Math.PI);
+    torsoFrame.add(skirtFront);
+    
+    skirtBack= new THREE.Mesh(new THREE.PlaneGeometry(32,14),new THREE.MeshLambertMaterial({side:THREE.DoubleSide,color:"rgb(193,164,124)"}));
+    skirtBack.position.set(0,-(38/2),-(32/2));
+    skirtBack.rotation.x=((45/180+1)*Math.PI);
+    torsoFrame.add(skirtBack);
+    
+    skirtLeft= new THREE.Mesh(new THREE.PlaneGeometry(32,14),new THREE.MeshLambertMaterial({side:THREE.DoubleSide,color:"rgb(193,164,124)"}));
+    skirtLeft.position.set((32/2),-(38/2),0);
+    skirtLeft.rotation.order='ZYX';
+    skirtLeft.rotation.y=Math.PI/2;
+    skirtLeft.rotation.z=((45/180+1)*Math.PI);
+    torsoFrame.add(skirtLeft);
+    
+    skirtRight= new THREE.Mesh(new THREE.PlaneGeometry(32,14),new THREE.MeshLambertMaterial({side:THREE.DoubleSide,color:"rgb(193,164,124)"}));
+    skirtRight.position.set(-(32/2),-(38/2),0);
+    skirtRight.rotation.order='ZYX';
+    skirtRight.rotation.y=-Math.PI/2;
+    skirtRight.rotation.z=(-(45/180+1)*Math.PI);
+    torsoFrame.add(skirtRight);
+    
+    torsoFrame.position.set(75,0,0);
+    scene.add(torsoFrame);
+    
+    //head
+    headFrame = new THREE.Object3D();
+    var headMaterials = [];
+    headMaterials.push(new THREE.MeshLambertMaterial({map: THREE.ImageUtils.loadTexture('http://i.imgur.com/HLsMJBP.jpg')}));
+    headMaterials.push(new THREE.MeshLambertMaterial({map: THREE.ImageUtils.loadTexture('http://i.imgur.com/wGu0Gjw.jpg')}));
+    headMaterials.push(new THREE.MeshLambertMaterial({color:"rgb(193,164,124)"}));
+    headMaterials.push(new THREE.MeshLambertMaterial({color:"rgb(193,164,124)"}));
+    headMaterials.push(new THREE.MeshLambertMaterial({map: THREE.ImageUtils.loadTexture( 'http://i.imgur.com/4mNr4Xv.jpg' ) }));//
+    headMaterials.push(new THREE.MeshLambertMaterial({color:"rgb(193,164,124)"}));
+    mesh=new THREE.Mesh(new THREE.BoxGeometry(65, 45, 43),new THREE.MeshFaceMaterial(headMaterials));
+    headFrame.add(mesh);
+		headFrame.position.set(0,(45/2+38/2),0);
+    torsoFrame.add(headFrame);
+    
+    //left arm
+    leftArmFrame = new THREE.Object3D();
+    leftArm=new THREE.Mesh(new THREE.BoxGeometry(13,34,13),new THREE.MeshLambertMaterial({color:"rgb(193,164,124)"}));
+    leftArm.position.set(0,-(38/2),0);
+    leftArmFrame.add(leftArm);
+    
+    leftArmJoint= new THREE.Mesh(new THREE.CylinderGeometry((13/2),(13/2),13,32),new THREE.MeshLambertMaterial({wireframe:true}));
+    leftArmJoint.position.set=(0,0,0);
+    leftArmJoint.rotation.x=Math.PI/2;
+    leftArmFrame.add(leftArmJoint);
+    
+    leftArmFrame.position.set((32/2+13/2),(38/2)-13,0);
+    leftArmFrame.rotation.x=-(45/180)*(Math.PI);
+    torsoFrame.add(leftArmFrame);
+    
+    //right arm
+    rightArmFrame = new THREE.Object3D();
+    rightArm=new THREE.Mesh(new THREE.BoxGeometry(13-0.5,34,13),new THREE.MeshLambertMaterial({color:"rgb(193,164,124)"}));
+    rightArm.position.set(0,-(38/2),0);
+    rightArmFrame.add(rightArm);
+    
+    rightArmJoint= new THREE.Mesh(new THREE.CylinderGeometry((13/2),(13/2),13,32),new THREE.MeshLambertMaterial({wireframe:true}));
+    rightArmJoint.position.set=(0,0,0);
+    rightArmJoint.rotation.x=Math.PI/2;
+    rightArmFrame.add(rightArmJoint);
+    
+    rightArmFrame.position.set(-(32/2+13/2),(38/2)-13,0);
+    rightArmFrame.rotation.x=-(45/180)*(Math.PI);
+    torsoFrame.add(rightArmFrame);
+    
+    
+    //left leg
+    leftLegFrame = new THREE.Object3D();
+    leftLeg= new THREE.Mesh(new THREE.BoxGeometry(13-1,35,29),new THREE.MeshLambertMaterial({color:"rgb(193,164,124)"}));
+    leftLeg.position.set(0,-(38/2),0);
+		leftLegFrame.add(leftLeg);
+    leftLegJoint=new THREE.Mesh(new THREE.CylinderGeometry((13/2),(13/2),29,32),new THREE.MeshLambertMaterial({wireframe:true}));
+    leftLegJoint.rotation.x=Math.PI/2;
+    leftLegFrame.add(leftLegJoint);
+    leftLegFrame.position.set((13/2),-(38/2+35/2+13/2)+(38/2),0);
+    leftLegFrame.rotation.x=-(45/180)*Math.PI;
+    torsoFrame.add(leftLegFrame);
+    
+    //right leg
+    rightLegFrame = new THREE.Object3D();
+    rightLeg= new THREE.Mesh(new THREE.BoxGeometry(13-1,35,29),new THREE.MeshLambertMaterial({color:"rgb(193,164,124)"}));
+    rightLeg.position.set(0,-(38/2),0);
+		rightLegFrame.add(rightLeg);
+    rightLegJoint=new THREE.Mesh(new THREE.CylinderGeometry((13/2),(13/2),29,32),new THREE.MeshLambertMaterial({wireframe:true}));
+    rightLegJoint.rotation.x=Math.PI/2;
+    rightLegFrame.add(rightLegJoint);
+    rightLegFrame.position.set(-(13/2),-(38/2+35/2+13/2)+(38/2),0);
+    rightLegFrame.rotation.x=-(45/180)*Math.PI;
+    torsoFrame.add(rightLegFrame);
+}
+
+function animate() {
+    controls.update();
+    
+    if(danceMode==false){
+        
+      angle=angle+gcontrols.speed;
+      if(angle>Math.PI*2)angle=0;
+      if(angleArm>Math.PI/8||angleArm<-Math.PI/8)adjust=-adjust;
+
+      angleArm=angleArm+adjust*gcontrols.speed;
+      torsoFrame.position.set(75*Math.cos(angle),0,75*Math.sin(angle));
+
+      torsoFrame.rotation.y=-angle;
+
+      leftArmFrame.rotation.x=-angleArm;
+      leftArmFrame.rotation.z=(10/180)*(Math.PI);
+      rightArmFrame.rotation.x=angleArm;
+      rightArmFrame.rotation.z=-(10/180)*(Math.PI);
+
+      leftLegFrame.rotation.x=angleArm;
+      rightLegFrame.rotation.x=-angleArm;
+		}
+    else{
+    
+      var t = clock.getElapsedTime() % period;
+      var s = t / period; // normalized time
+      for (var i = keys.length - 1; i >= 0; i--) {
+        if (s > keys[i].s)
+          break;
+      }
+      // linearly interpolate between i & i+1
+      var tt = (s - keys[i].s) / (keys[i + 1].s - keys[i].s);
+      var heady = (1 - tt) * keys[i].pose.heady + tt * keys[i + 1].pose.heady;
+      var rightArmz = (1 - tt) * keys[i].pose.rightArmz + tt * keys[i + 1].pose.rightArmz;
+      var leftArmz = (1 - tt) * keys[i].pose.leftArmz + tt * keys[i + 1].pose.leftArmz;
+      
+      var rightLegz = (1 - tt) * keys[i].pose.rightLegz + tt * keys[i + 1].pose.rightLegz;
+      var leftLegz = (1 - tt) * keys[i].pose.leftLegz + tt * keys[i + 1].pose.leftLegz;
+      
+    	headFrame.rotation.y=heady;
+      rightArmFrame.rotation.z=rightArmz;
+    	leftArmFrame.rotation.z=leftArmz;
+      
+    	rightLegFrame.rotation.z=rightLegz;
+    	leftLegFrame.rotation.z=leftLegz;
+      
+    }
+    var cameraOffset = mesh.localToWorld (new THREE.Vector3(0,125,-150));
+  	camera3rd.position.copy(cameraOffset);
+  	camera3rd.lookAt(torsoFrame.position);
+
+    requestAnimationFrame(animate);
+    render();
+}
+function setDefault(){
+    headFrame.rotation.x=0;
+    headFrame.rotation.y=0;
+    headFrame.rotation.z=0;
+    torsoFrame.rotation.x=0;
+    torsoFrame.rotation.y=0;
+    torsoFrame.rotation.z=0;
+    leftArmFrame.rotation.x=0;
+    leftArmFrame.rotation.y=0;
+    leftArmFrame.rotation.z=0;
+    rightArmFrame.rotation.x=0;
+    rightArmFrame.rotation.y=0;
+    rightArmFrame.rotation.z=0;
+    leftLegFrame.rotation.x=0;
+    leftLegFrame.rotation.y=0;
+    leftLegFrame.rotation.z=0;
+    rightLegFrame.rotation.x=0;
+    rightLegFrame.rotation.y=0;
+    rightLegFrame.rotation.z=0;
+}
+
+function render() {
+		if(thirdPersonView==false)
+	    renderer.render(scene, camera);
+    else
+	    renderer.render(scene, camera3rd);
+}
+
+// important to add this 
+// in jsfiddle!
+window.focus();
+</script>
+
+
+</body>
+
+</html>
