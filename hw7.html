@@ -3,7 +3,8 @@
 <html>
 
 <head>
-<style>body {
+<style>
+body {
     background-color: #fff;
     color: #111;
     margin: 0px;
@@ -20,12 +21,14 @@
     text-align: center;
     color: #ffff00
 }
+
 </style>
 </head>
 
 <body> 
-
-<div id="info"> hw7
+<div id="info">Render to Texture
+<br> hw7: monochrome
+<br> I want to add a colored focus
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r76/three.min.js"></script>
 <script src="https://dl.dropboxusercontent.com/u/3587259/Code/Threejs/OrbitControls.js">
@@ -68,11 +71,7 @@ vec3 hsv2rgb(vec3 c)
 	gl_FragColor = vec4 (rgb, 1.0);
 	}
 </script>
-
-
-
 <script>
-
 var renderer, camera, controls;
 var pointLight;
 var scene, sceneRTT, rtTexture, torus;
@@ -145,7 +144,7 @@ function init()
     });*/
     THREE.ImageUtils.crossOrigin = '';  // no space between a pair of single quotes
 
-	bumpMap = THREE.ImageUtils.loadTexture("https://k6e2n0t12.github.io/homework-repository.NoiseBump.jpg");
+	bumpMap = THREE.ImageUtils.loadTexture("http://k6e2n0t12.github.io/homework-repository.NoiseBump.jpg");
 	var loader = new THREE.ObjectLoader();
   loader.load ('https://k6e2n0t12.github.io/homework-repository/nissan-gt-r-nismo.json', 
   function ( obj ) {
@@ -360,8 +359,8 @@ function animate()
 
 }
 
-</script>
 
+</script>
 
 </body>
 
